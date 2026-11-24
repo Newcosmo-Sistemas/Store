@@ -1,5 +1,5 @@
 // TechPOS SaaS Frontend
-const API_URL = 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxm9mOq9jLyKiAjnG8zyacbwBod7oB_WGXw2lpsYtXMDuKaBHPlMwhAqV97gmK7f0VfoQ/exec';
 const IGV_RATE=0.18, LOW_STOCK=3, TIENDA='TECHPOS';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const money=n=>'S/ '+Number(n||0).toFixed(2);
