@@ -3,7 +3,7 @@
  * ========================================================= */
 
 // 👉 Pega aquí la URL de tu Web App de Apps Script (termina en /exec)
-const API_URL = 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxurWTw55ZPyt7TOifoy-2Jz2SZ1SleZOmQOepLkSAONjCWlrF11AQiGYwscLU7sdzw/exec';
 
 const IGV_RATE = 0.18;
 const LOW_STOCK = 3;
