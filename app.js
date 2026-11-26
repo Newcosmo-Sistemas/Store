@@ -1,5 +1,5 @@
 // TechPOS SaaS · Frontend (panel tipo dashboard)
-const API_URL = 'https://script.google.com/macros/s/AKfycbxm9mOq9jLyKiAjnG8zyacbwBod7oB_WGXw2lpsYtXMDuKaBHPlMwhAqV97gmK7f0VfoQ/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbw_kXHHeCS8N19VgFR047koM-fS91uToLau6v1njg5xFDUn2JT6-a8R3DLHOwlzV1VjGg/exec';
 const IGV_RATE = 0.18, LOW_STOCK = 3;
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const money = n => 'S/ ' + Number(n || 0).toFixed(2);
