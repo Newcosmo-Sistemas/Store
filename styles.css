@@ -73,7 +73,7 @@ body{background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,
 .btn{background:var(--brand);color:#fff}.btn:hover{background:var(--brand-2)}
 .btn-sec{background:var(--surface);color:var(--text);border:1px solid var(--line)}.btn-sec:hover{background:var(--surface-2)}
 .btn-danger{background:var(--bad-bg);color:var(--bad)}.btn-danger:hover{filter:brightness(.97)}
-.btn:disabled,.btn-sec:disabled{opacity:.5;cursor:not-allowed}
+.btn:disabled,.btn-sec:disabled,.btn-danger:disabled{opacity:.5;cursor:not-allowed}
 .btn-sm{padding:.3rem .65rem;font-size:.8rem;border-radius:.5rem}
 .link{color:var(--brand);font-weight:600;font-size:.85rem}.link:hover{text-decoration:underline}
 .link.warn{color:var(--warn)}.link.bad{color:var(--bad)}
