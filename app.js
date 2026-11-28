@@ -139,7 +139,9 @@ $('#loginForm').addEventListener('submit', async e => {
 });
 async function logout(silent) {
   if (!silent) { try { await api.post({action: 'logout'}); } catch (e) {} }
-  state.token = ''; state.user = null; state.loaded = false; state.cart = []; sessionStorage.clear();
+  state.token = ''; state.user = null; state.loaded = false; state.cart = []; state.productos = []; state.ventas = []; state.businesses = []; state.adminUsers = []; state.teamUsers = []; state.tenantReports = null; state.auditLogs = [];
+  try { sessionStorage.clear(); } catch (e) {}
+  $$('dialog[open]').forEach(d => d.close());
   $('#appScreen').classList.add('hidden'); $('#loginScreen').classList.remove('hidden');
 }
 $('#btnLogout').onclick = () => logout(false);
@@ -156,6 +158,7 @@ function renderAll() { renderCats(); renderGrid(); renderCart(); renderInventory
 
 function renderCats() {
   const cats = ['Todas', ...new Set(state.productos.map(p => p.Categoria).filter(Boolean))];
+  if (!cats.includes(state.cat)) state.cat = 'Todas';
   $('#cats').innerHTML = cats.map(c => `<button data-cat="${esc(c)}" class="pchip ${c === state.cat ? 'active' : ''}">${esc(c)}</button>`).join('');
 }
 function renderGrid() {
@@ -177,7 +180,7 @@ function addToCart(sku) {
 function changeQty(sku, delta) {
   const l = state.cart.find(x => x.sku === sku); if (!l) return;
   const n = l.cant + delta;
-  if (n > stockOf(sku)) return toast('Stock insuficiente', false);
+  if (delta > 0 && n > stockOf(sku)) return toast('Stock insuficiente', false);
   if (n <= 0) state.cart = state.cart.filter(x => x !== l); else l.cant = n;
   renderCart();
 }
@@ -195,7 +198,11 @@ function renderInventory() {
   const list = state.productos.filter(p => !q || String(p.Nombre).toLowerCase().includes(q) || String(p.SKU).toLowerCase().includes(q));
   $('#invBody').innerHTML = list.map(p => `<tr><td>${esc(p.SKU)}</td><td>${esc(p.Nombre)}<div class="hint">${esc(p.Marca || '')}</div></td><td>${esc(p.Categoria)}</td><td class="num">${money(p.Precio_Venta)}</td><td class="num"><span class="badge ${Number(p.Stock) <= LOW_STOCK ? 'b-bad' : 'b-ok'}">${esc(p.Stock)}</span></td><td><div class="actions"><button class="link" data-edit="${esc(p.SKU)}">Editar</button><button class="link bad" data-del="${esc(p.SKU)}">Borrar</button></div></td></tr>`).join('') || '<tr><td colspan="6" class="empty">No hay productos para mostrar.</td></tr>';
 }
-function renderRestock() { $('#restockSku').innerHTML = state.productos.map(p => `<option value="${esc(p.SKU)}">${esc(p.SKU)} – ${esc(p.Nombre)}</option>`).join(''); }
+function renderRestock() {
+  const sel = $('#restockSku'), cur = sel.value;
+  sel.innerHTML = state.productos.map(p => `<option value="${esc(p.SKU)}">${esc(p.SKU)} – ${esc(p.Nombre)}</option>`).join('');
+  if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
 
 function parseItems(v) { try { return JSON.parse(v.Productos_JSON) || []; } catch (e) { return []; } }
 function renderDashboard() {
@@ -304,7 +311,7 @@ async function loadTenantReports() {
     $('#tenantReportKpis').innerHTML = kpi('Ventas del periodo', money(s.totalVentas), (s.cantidadVentas || 0) + ' operaciones') + kpi('Inventario a costo', money(s.valorCosto), (s.productos || 0) + ' productos')
       + kpi('Inventario a venta', money(s.valorVenta), (s.unidadesStock || 0) + ' unidades en stock');
     $('#tenantSalesBody').innerHTML = (r.ventas || []).slice().reverse().map(v => `<tr><td>${esc(fmtDT(v.Fecha))}</td><td>${esc(v.ID_Venta)}</td><td>${esc(v.Cliente_Nombre)}</td><td>${esc(v.Metodo_Pago)}</td><td class="num">${money(v.Subtotal)}</td><td class="num">${money(v.IGV_Impuesto)}</td><td class="num"><b>${money(v.Total)}</b></td></tr>`).join('') || '<tr><td colspan="7" class="empty">No hay ventas en este periodo.</td></tr>';
-    const prods = state.productos || [];
+    const prods = (r.inventario && r.inventario.length) ? r.inventario : (state.productos || []);
     $('#tenantKardexBody').innerHTML = (r.kardex || []).slice().reverse().map(m => {
       const p = prods.find(x => String(x.SKU) === String(m.SKU)), inc = /ENTRADA|INICIAL/.test(m.Tipo);
       return `<tr><td>${esc(fmtDT(m.Fecha))}</td><td>${esc(m.SKU)}</td><td>${esc(p?.Nombre || '—')}</td><td>${esc(m.Tipo)}</td><td class="num" style="color:var(${inc ? '--ok' : '--bad'})">${inc ? '+' : '−'}${Number(m.Cantidad || 0)}</td><td class="num">${Number(m.Saldo_Despues || 0)}</td><td>${esc(m.Usuario || '')}</td><td>${esc(m.Referencia || '')}</td></tr>`;
@@ -380,7 +387,7 @@ function openBusinessDlg(b) {
   f.elements.username.required = !b; f.elements.password.required = !b; f.elements.businessId.value = b ? b.ID : '';
   if (b) {
     f.elements.nombre.value = b.Nombre || ''; f.elements.ruc.value = b.RUC || ''; f.elements.telefono.value = b.Telefono || ''; f.elements.email.value = b.Email || '';
-    f.elements.planEdit.value = planKey(b.Plan); f.elements.vencimiento.value = dayKey(b.Vencimiento);
+    f.elements.planEdit.value = planKey(b.Plan); f.elements.vencimiento.value = dayKey(b.Vencimiento); f.dataset.origVence = f.elements.vencimiento.value;
   }
   $('#businessDlg').showModal();
 }
@@ -392,7 +399,7 @@ $('#businessForm').onsubmit = async e => {
         const d = await api.post({action: 'admin_createBusiness', nombre: v.nombre, ruc: v.ruc, email: v.email, telefono: v.telefono, username: v.username.trim(), password: v.password, plan: v.planCreate});
         $('#businessDlg').close(); showSecret('Negocio creado', v.username.trim(), v.password, 'Base de datos independiente: ' + d.business.databaseUrl);
       } else {
-        await api.post({action: 'admin_updateBusiness', businessId: v.businessId, nombre: v.nombre, ruc: v.ruc, email: v.email, telefono: v.telefono, plan: v.planEdit, vencimiento: v.vencimiento});
+        await api.post({action: 'admin_updateBusiness', businessId: v.businessId, nombre: v.nombre, ruc: v.ruc, email: v.email, telefono: v.telefono, plan: v.planEdit, vencimiento: v.vencimiento !== e.target.dataset.origVence ? v.vencimiento : ''});
         $('#businessDlg').close(); toast('Negocio actualizado');
       }
       await loadBusinesses();
